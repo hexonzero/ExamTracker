@@ -3,7 +3,7 @@
 :root[data-theme="dark"]{--bg:#101230;--cd:#1a1d44;--tx:#eceefc;--mu:#a0a7cf;--bd:#2f3466;--ac:#9aa0ff;--as:#252a5e;--wk:#f0b232;--dn:#3ccf9f;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 Figtree,system-ui,sans-serif;min-height:100vh}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 Figtree,system-ui,sans-serif;min-height:100vh;min-height:100dvh}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:20}
 h1,h2,h3{font-family:"Familjen Grotesk",system-ui,sans-serif;margin:0;line-height:1.15}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -23,7 +23,8 @@ button{cursor:pointer}
 .card h3{font-size:19px;margin-bottom:8px}
 .mu{color:var(--mu);font-size:14px}
 .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:18px 0 10px;flex-wrap:wrap}
-.top h2{font-size:24px}
+.top h1{font-size:24px}
+.sw{border:1px solid var(--bd);background:var(--cd);border-radius:10px;padding:8px 10px;min-height:40px;font-weight:600;max-width:210px}
 .btn{border:1px solid var(--bd);background:var(--cd);border-radius:10px;padding:8px 14px;font-weight:600;min-height:40px}
 .btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
 :root:not([data-theme="light"]) .btn.p{color:#101230}
@@ -48,7 +49,7 @@ summary span{font:600 14px Figtree,sans-serif;color:var(--mu)}
 .add{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--bd)}
 .add input,.f input,.f select,textarea{border:1px solid var(--bd);background:var(--bg);border-radius:10px;padding:8px 10px;min-width:0}
 .add input{flex:1}
-.lk{border:0;background:none;color:var(--ac);text-decoration:underline;font-size:13px;padding:0 4px}
+.lk{border:0;background:none;color:var(--ac);text-decoration:underline;font-size:13px;padding:8px 6px}
 .chk{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}
 .chk input{width:22px;height:22px;accent-color:var(--dn);flex:none}
 .chk.dn .t{text-decoration:line-through;color:var(--mu)}
@@ -113,7 +114,7 @@ body{font-size:15.5px;line-height:1.5}.w{max-width:960px}
 .art span{display:grid;place-items:center}.art .bub{width:22px;height:22px;animation:pop .5s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--i)*30ms + .4s)}
 .hero h1{animation:up .7s .05s ease both}.hero p.mu{animation:up .7s .15s ease both}.hero .cb{animation:up .7s .25s ease both;z-index:40}.hero .pop{animation:up .7s .35s ease both}.rc .sample{animation:up .8s .6s ease both;box-shadow:0 12px 30px rgba(40,40,120,.1)}
 main>div.in{animation:up .35s ease both}.in .bar i{animation:grow .7s .1s ease both}.in .ch i{transform-origin:bottom;animation:rise .6s ease both}
-.sb.pop .bub{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.sb.pulse .bub{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
 @media(min-width:860px){.today{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;align-items:start}}
 .card,.btn,.sb,.pop button{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
 .pop button:hover{transform:translateY(-2px)}.btn:active,.sb:active,.pop button:active{transform:scale(.97)}

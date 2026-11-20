@@ -1,3 +1,4 @@
+if(top!==self){try{top.location.href=location.href}catch(e){document.documentElement.style.display="none"}}
 const M={
 QA:["Quantitative aptitude","Number system, HCF & LCM|Simplification & approximation|Percentage|Ratio, proportion & partnership|Average & ages|Profit, loss & discount|Simple & compound interest|Time & work, pipes|Time, speed & distance|Mixture & alligation|Algebra~SRDXO|Geometry~SRDXO|Mensuration~SRDXO|Trigonometry & heights~SDX|Number series & quadratic equations~B|Data interpretation~BXS"],
 RS:["Reasoning","Analogy, classification & series|Coding-decoding|Blood relations & direction sense|Syllogism & Venn diagrams|Order, ranking & arrangement|Inequality~B|Puzzles & seating arrangement~B|Input-output & data sufficiency~B|Non-verbal & figure reasoning~SRDXO"],
@@ -129,15 +130,37 @@ const iso=(d=new Date())=>{return d.getFullYear()+"-"+String(d.getMonth()+1).pad
 const fd=d=>d.toLocaleDateString(undefined,{day:"numeric",month:"short"});
 let S=null;try{S=JSON.parse(localStorage.getItem("gx1")||"null")}catch(e){}
 if(!S||typeof S!=="object")S={};S.ex=S.ex||{};S.cx=S.cx||[];S.tab=S.tab||"today";
-const save=()=>{try{localStorage.setItem("gx1",JSON.stringify(S))}catch(e){}};
+const save=()=>{try{localStorage.setItem("gx1",JSON.stringify(S));return true}catch(e){if(!save.w){save.w=1;toast("Could not save in this browser. Copy a backup from the Backup tab.")}return false}};
+const KY=/^[A-Za-z0-9._-]{1,100}$/,DT=/^\d{4}-\d{2}-\d{2}$/,nz=(v,d=0)=>Number.isFinite(+v)?+v:d,cnt=v=>Math.max(0,Math.floor(nz(v)));
+const keep=(src,re,fn)=>{const r={};if(src&&typeof src==="object")Object.keys(src).forEach(k=>{if(re.test(k))r[k]=fn(src[k])});return r};
+const tkey=(m,s)=>{const j=s.indexOf("~");return m+"."+sl(j<0?s:s.slice(0,j))};
+/* v2: topic keys use the topic name, not its position, so editing M never shifts saved progress */
+function migrate(o){if(!o||o.v>=2)return;if(!o.ex||typeof o.ex!=="object"||!Object.keys(o.ex).length){o.v=2;return}
+const mp={};Object.keys(M).forEach(m=>M[m][1].split("|").forEach((s,i)=>mp[m+"."+i]=tkey(m,s)));
+Object.values(o.ex).forEach(x=>{if(!x||typeof x!=="object")return;["st","cd","rv"].forEach(f=>{const q=x[f];if(!q||typeof q!=="object")return;Object.keys(q).forEach(k=>{if(mp[k]){q[mp[k]]=q[k];delete q[k]}})});x.dl={}});o.v=2;if(o===S)save()}
+/* rebuild a restored backup from known fields only */
+const cdl=d=>d&&DT.test(d.d)?{d:d.d,c:keep(d.c,/^[A-Za-z0-9._-]{1,120}$/,v=>v?1:0),p:cnt(d.p),pl:Array.isArray(d.pl)?d.pl.filter(p=>p&&KY.test(p.k)&&typeof p.s==="string"&&typeof p.n==="string").map(p=>({k:p.k,s:p.s.slice(0,80),n:p.n.slice(0,80)})):null}:{};
+function clean(o){const r={v:2,ex:{},cx:[],tab:["today","syl","plan","week","mock","print","bak"].includes(o.tab)?o.tab:"today",cur:KY.test(o.cur)?o.cur:null,act:keep(o.act,DT,cnt)};
+if(o.th==="light"||o.th==="dark")r.th=o.th;if(DT.test(o.bk))r.bk=o.bk;
+(Array.isArray(o.cx)?o.cx:[]).forEach(c=>{if(c&&KY.test(c.id)&&typeof c.name==="string")r.cx.push({id:c.id,cat:"X",name:c.name.slice(0,60),mods:(Array.isArray(c.mods)?c.mods:[]).filter(m=>M[m])})});
+Object.keys(o.ex).forEach(id=>{const s=o.ex[id];if(!KY.test(id)||!s||typeof s!=="object")return;
+const x={st:keep(s.st,KY,v=>[0,1,2].includes(+v)?+v:0),cd:keep(s.cd,KY,v=>DT.test(v)?v:iso()),rv:keep(s.rv,KY,v=>Math.min(4,cnt(v))),rd:keep(s.rd,KY,v=>DT.test(v)?v:iso()),fb:keep(s.fb,DT,cnt),td:keep(s.td,DT,cnt),dl:cdl(s.dl),
+cu:(Array.isArray(s.cu)?s.cu:[]).filter(c=>c&&M[c.m]&&KY.test(c.k)&&typeof c.n==="string").map(c=>({m:c.m,n:c.n.slice(0,80),k:c.k})),
+mk:(Array.isArray(s.mk)?s.mk:[]).filter(a=>a&&nz(a.t)>0&&Number.isFinite(+a.s)).map(a=>({n:String(a.n||"Mock").slice(0,40),s:+a.s,t:+a.t,d:DT.test(a.d)?a.d:iso(),sec:keep(a.sec,KY,v=>Array.isArray(v)?[nz(v[0]),Math.max(0,nz(v[1]))]:[0,0])}))};
+x.s0=DT.test(s.s0)?s.s0:iso();if(DT.test(s.date))x.date=s.date;const t=nz(s.tg);if(t>0&&t<=100)x.tg=t;
+if(Array.isArray(s.bd))x.bd=s.bd.filter(b=>typeof b==="string"&&KY.test(b));r.ex[id]=x});return r}
+let ARM=null;
+function arm(b,id,lbl){if(ARM===id){ARM=null;return true}b.dataset.t0=b.dataset.t0||b.textContent;b.textContent=lbl||"sure?";ARM=id;toast("Tap again to confirm");setTimeout(()=>{if(ARM===id){ARM=null;if(b.isConnected)b.textContent=b.dataset.t0}},3000);return false}
+migrate(S);S=clean(S);
+EX.forEach(e=>e.mods.forEach(m=>{if(!M[m])console.error("Unknown subject code",m,"in",e.name)}));
 const setTheme=()=>{if(S.th)document.documentElement.dataset.theme=S.th};setTheme();
 const ALL=()=>EX.concat(S.cx);
 const ce=()=>ALL().find(e=>e.id===S.cur);
-const X=()=>{const x=S.ex[S.cur]||(S.ex[S.cur]={});x.st=x.st||{};x.cu=x.cu||[];x.mk=x.mk||[];x.dl=x.dl||{};x.s0=x.s0||iso();x.cd=x.cd||{};x.fb=x.fb||{};x.td=x.td||{};x.rv=x.rv||{};return x};
+const X=(id=S.cur)=>{const x=S.ex[id]||(S.ex[id]={});x.st=x.st||{};x.cu=x.cu||[];x.mk=x.mk||[];x.dl=x.dl||{};x.s0=x.s0||iso();x.cd=x.cd||{};x.fb=x.fb||{};x.td=x.td||{};x.rv=x.rv||{};x.rd=x.rd||{};return x};
 const OPEN={};let FLT="a",confirmRst=0,ANI=1,RMX=null;
-function subs(e){const x=X();return e.mods.map(m=>{const[n,t]=M[m];const it=[];t.split("|").forEach((s,i)=>{const j=s.indexOf("~");if(j<0||s.slice(j+1).includes(e.cat))it.push({k:m+"."+i,n:j<0?s:s.slice(0,j)})});x.cu.filter(c=>c.m===m).forEach(c=>it.push({k:c.k,n:c.n,c:1}));return{m,n,it}})}
-function stats(ss){const x=X();let t=0,d=0,w=0;ss.forEach(s=>s.it.forEach(i=>{t++;const v=x.st[i.k]||0;if(v==2)d++;if(v==1)w++}));return{t,d,w,n:t-d-w}}
-function dleft(){const d=X().date;if(!d)return null;return Math.ceil((new Date(d+"T00:00:00")-new Date(new Date().toDateString()))/864e5)}
+function subs(e){const x=X(e.id);return e.mods.map(m=>{const[n,t]=M[m];const it=[];t.split("|").forEach((s,i)=>{const j=s.indexOf("~");if(j<0||s.slice(j+1).includes(e.cat))it.push({k:tkey(m,s),n:j<0?s:s.slice(0,j)})});x.cu.filter(c=>c.m===m).forEach(c=>it.push({k:c.k,n:c.n,c:1}));return{m,n,it}})}
+function stats(ss,id){const x=X(id);let t=0,d=0,w=0;ss.forEach(s=>s.it.forEach(i=>{t++;const v=x.st[i.k]||0;if(v==2)d++;if(v==1)w++}));return{t,d,w,n:t-d-w}}
+function dleft(id){const d=X(id).date;if(!d)return null;return Math.ceil((new Date(d+"T00:00:00")-new Date(new Date().toDateString()))/864e5)}
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),2600)}
 const bub=(k,v)=>`<button class="sb" data-a="cyc" data-k="${k}" data-v="${v}" aria-label="Status: ${LB[v]}. Tap to change"><i class="bub"></i>${LB[v]}</button>`;
 const pct=(a,b)=>b?Math.round(a/b*100):0;
@@ -149,7 +172,7 @@ const tgt=(e,x)=>x.tg||(/^ctet/.test(e.id)?60:CUT[e.cat]);
 function mark(){S.act=S.act||{};const d=iso();S.act[d]=(S.act[d]||0)+1}
 function streak(){const a=S.act||{};let n=0,d=new Date();if(!a[iso(d)])d.setDate(d.getDate()-1);while(a[iso(d)]){n++;d.setDate(d.getDate()-1)}let best=0,run=0,pv=null;Object.keys(a).sort().forEach(k=>{run=pv&&new Date(k)-new Date(pv)===864e5?run+1:1;pv=k;if(run>best)best=run});return{n,best:Math.max(best,n)}}
 function streakCard(){const s=streak(),a=S.act||{};let h="";for(let i=27;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const c=a[iso(d)]||0;h+=`<i class="l${c>5?3:c>2?2:c?1:0}" title="${fd(d)}: ${c} updates"></i>`}
-return `<div class="card"><div style="display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap"><div><div class="clock">${s.n}</div><div class="mu">${s.n===1?"day":"days"} in a row · best ${s.best}</div></div><div class="hm" role="img" aria-label="Activity over the last 28 days">${h}</div></div><p class="mu" style="margin:8px 0 0">${s.n?"Any task, topic update, focus block or mock keeps your streak alive.":"Finish one task today to start your streak."}</p></div>`}
+return `<div class="card"><div style="display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap"><div><div class="clock">${s.n}</div><div class="mu">${s.n===1?"day":"days"} in a row (all exams) · best ${s.best}</div></div><div class="hm" role="img" aria-label="Activity over the last 28 days">${h}</div></div><p class="mu" style="margin:8px 0 0">${s.n?"Any task, topic update, focus block or mock keeps your streak alive.":"Finish one task today to start your streak."}</p></div>`}
 function weekTab(e,ss){const x=X(),A=S.act||{};const rng=o=>{const s=new Date();s.setDate(s.getDate()-((s.getDay()+6)%7)-7*o);return Array.from({length:7},(_,i)=>{const d=new Date(s);d.setDate(s.getDate()+i);return iso(d)})};
 const sum=(o,ds)=>ds.reduce((t,d)=>t+(o[d]||0),0),tw=rng(0),lw=rng(1),names={};ss.forEach(s=>s.it.forEach(i=>names[i.k]=i.n));
 const dn=ds=>Object.keys(x.cd).filter(k=>ds.includes(x.cd[k])&&names[k]),mk=ds=>x.mk.filter(m=>ds.includes(m.d));
@@ -166,10 +189,11 @@ const rows=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map((
 return `<div class="noprint card"><h3>Printable study plan</h3><p class="mu" style="margin:0 0 8px">A weekly timetable plus your syllabus checklist, based on your current progress. Choose “Save as PDF” in the print window to keep a copy.</p><button class="btn p" data-a="pt">Print or save as PDF</button></div>
 <div class="pr card"><h3>${esc(e.name)} study plan</h3><p class="mu">Exam date: ${x.date?fd(new Date(x.date+"T00:00:00"))+" ("+dl+" days left)":"not set"} · Target score: ${tgt(e,x)}% · Done: ${st.d} of ${st.t} topics</p>
 <table><tr><th>Day</th><th>Subjects</th><th>Also do</th></tr>${rows}</table><h3 style="margin-top:16px">Syllabus checklist</h3><p class="mu">☐ not started · ◐ working on it · ☑ completed</p>${ss.map(s=>`<p style="margin:10px 0 2px"><b>${esc(s.n)}</b></p><ul>${s.it.map(i=>`<li>${sy[x.st[i.k]||0]} ${esc(i.n)}</li>`).join("")}</ul>`).join("")}</div>`}
-const RI=[1,3,7,21];
-function dueCard(x,ss){const nm={};ss.forEach(s=>s.it.forEach(i=>nm[i.k]=i.n));const t=iso(),L=[];
-Object.keys(x.cd).forEach(k=>{if(!nm[k])return;const r=x.rv[k]||0;if(r>=RI.length)return;const d=new Date(x.cd[k]+"T00:00:00");d.setDate(d.getDate()+RI[r]);if(iso(d)<=t)L.push({k,n:nm[k],r,late:iso(d)<t})});
-return `<div class="card"><h3>Revise today${L.length?" ("+L.length+")":""}</h3>${L.slice(0,6).map(i=>`<div class="tr" style="padding-left:0;padding-right:0"><span>${esc(i.n)}<small class="mu" style="display:block">Review ${i.r+1} of 4${i.late?" · overdue":""}</small></span><button class="btn" data-a="rvd" data-k="${i.k}">Mark revised</button></div>`).join("")||`<p class="mu" style="margin:0">Nothing due. Topics you complete come back for review after 1, 3, 7 and 21 days.</p>`}${L.length>6?`<p class="mu" style="margin:8px 0 0">${L.length-6} more due. Clear these first.</p>`:""}</div>`}
+const RI=[1,2,4,14]; /* days after the previous review: 1, 3, 7, 21 days overall when on time */
+function dueList(x,ss){const nm={};ss.forEach(s=>s.it.forEach(i=>nm[i.k]=i.n));const t=iso(),L=[];
+Object.keys(x.cd).forEach(k=>{if(!nm[k])return;const r=x.rv[k]||0;if(r>=RI.length)return;const d=new Date((x.rd[k]||x.cd[k])+"T00:00:00");d.setDate(d.getDate()+RI[r]);if(iso(d)<=t)L.push({k,n:nm[k],r,late:iso(d)<t})});
+return L}
+function dueCard(x,ss){const L=dueList(x,ss);return `<div class="card"><h3>Revise today${L.length?" ("+L.length+")":""}</h3>${L.slice(0,6).map(i=>`<div class="tr" style="padding-left:0;padding-right:0"><span>${esc(i.n)}<small class="mu" style="display:block">Review ${i.r+1} of 4${i.late?" · overdue":""}</small></span><button class="btn" data-a="rvd" data-k="${i.k}">Mark revised</button></div>`).join("")||`<p class="mu" style="margin:0">Nothing due. Topics you complete come back for review after 1, 3, 7 and 21 days.</p>`}${L.length>6?`<p class="mu" style="margin:8px 0 0">${L.length-6} more due. Clear these first.</p>`:""}</div>`}
 function badges(e,ss,x){const st=stats(ss),s=streak().best,fb=Object.values(x.fb).reduce((a,b)=>a+b,0),rv=Object.values(x.rv).reduce((a,b)=>a+b,0),tg=tgt(e,x);
 return [["first","First step","Complete 1 topic",st.d>=1],["ten","Ten down","Complete 10 topics",st.d>=10],["half","Halfway there","Complete half the syllabus",st.t&&st.d*2>=st.t],["all","Syllabus done","Complete every topic",st.t&&st.d===st.t],["s3","3-day streak","Study 3 days in a row",s>=3],["s7","7-day streak","Study 7 days in a row",s>=7],["s30","30-day streak","Study 30 days in a row",s>=30],["fb","Deep focus","Finish 10 focus blocks",fb>=10],["m1","Mock taker","Log your first mock",x.mk.length>=1],["m5","Mock regular","Log 5 mocks",x.mk.length>=5],["tg","On target","Score at or above your target",x.mk.some(a=>pct(a.s,a.t)>=tg)],["rv","Reviser","Mark 10 revisions done",rv>=10]].map(a=>({id:a[0],n:a[1],d:a[2],ok:!!a[3]}))}
 function badgeCard(e,ss,x){const B=badges(e,ss,x);return `<h2 class="sec">Achievements: ${B.filter(b=>b.ok).length} of ${B.length}</h2><div class="tiles">${B.map(b=>`<div class="tile" data-v="${b.ok?2:0}" style="${b.ok?"":"opacity:.65"}"><i class="bub"></i><b>${b.n}</b><div class="mu">${b.d}</div></div>`).join("")}</div>`}
@@ -185,19 +209,28 @@ function pmAct(a){if(a==="pb"){if(pm.r){clearInterval(pm.t);pm.r=0}else{pm.r=1;p
 function daily(x){if(x.dl.d!==iso())x.dl={d:iso(),c:{},p:0};if(!x.dl.pl)x.dl.pl=null}
 function plan(x,ss){daily(x);if(!x.dl.pl){const act=ss.filter(s=>s.m!=="CA"&&s.it.some(i=>(x.st[i.k]||0)<2));const di=Math.floor(Date.now()/864e5),n=Math.min(3,act.length);x.dl.pl=[];for(let i=0;i<n;i++){const s=act[(di+i)%act.length];const it=s.it.find(a=>x.st[a.k]==1)||s.it.find(a=>!(x.st[a.k]>1));x.dl.pl.push({k:it.k,s:s.n,n:it.n})}save()}return x.dl.pl}
 
+const myExams=()=>Object.keys(S.ex).map(id=>ALL().find(e=>e.id===id)).filter(Boolean);
+function setTask(x,id,on){daily(x);if(!!x.dl.c[id]===on)return;x.dl.c[id]=on?1:0;const d=iso();x.td[d]=Math.max(0,(x.td[d]||0)+(on?1:-1))}
+function bkNudge(){if(Object.keys(S.act||{}).length<3)return"";const d=S.bk?(Date.now()-new Date(S.bk+"T00:00:00"))/864e5:99;
+return d<14?"":`<div class="card"><h3>Back up your progress</h3><p class="mu" style="margin:0 0 8px">${S.bk?"Your last backup was "+Math.floor(d)+" days ago.":"You have not made a backup yet."} Your progress lives only in this browser.</p><button class="btn p" data-a="tab" data-t="bak">Open Backup</button></div>`}
+function others(e){const o=myExams().filter(m=>m.id!==e.id);if(!o.length)return"";
+return `<div class="card"><h3>Your other exams</h3>${o.map(m=>{const ss=subs(m),st=stats(ss,m.id),dl=dleft(m.id),n=dueList(X(m.id),ss).length;return `<div class="tr" style="padding-left:0;padding-right:0"><span>${esc(m.name)}<small class="mu" style="display:block">${st.d} of ${st.t} topics${dl!==null&&dl>=0?" · "+dl+" days left":""}${n?" · "+n+" to revise":""}</small></span><button class="btn" data-a="pick" data-id="${m.id}">Switch</button></div>`}).join("")}</div>`}
+function overview(ms){if(!ms.length)return"";const k=d=>d===null||d<0?1e9:d;
+ms=ms.map(e=>({e,ss:subs(e),dl:dleft(e.id)})).sort((a,b)=>k(a.dl)-k(b.dl));
+return `<h2 class="sec">Your exams (${ms.length})</h2><div class="how">${ms.map(({e,ss,dl})=>{const st=stats(ss,e.id),n=dueList(X(e.id),ss).length;
+return `<div class="card"><h3>${esc(e.name)}</h3><div class="mu">${st.d} of ${st.t} topics · ${dl===null?"no exam date":dl>0?dl+" days left":dl===0?"exam is today":"date passed"}${n?" · "+n+" to revise":""}</div><div class="bar"><i class="d" style="width:${pct(st.d,st.t)}%"></i><i class="w2" style="width:${pct(st.w,st.t)}%"></i></div><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn p" data-a="pick" data-id="${e.id}">Open</button><button class="btn" data-a="rmx" data-id="${e.id}" aria-label="Remove ${esc(e.name)}">${RMX===e.id?"Tap again to remove":"Remove"}</button></div></div>`}).join("")}</div><p class="mu">Preparing for more than one exam? Search below to add another. Each exam keeps its own progress.</p>`}
 /* views */
-function landing(){const mine=Object.keys(S.ex).map(id=>ALL().find(e=>e.id===id)).filter(Boolean);
-return `<header class="lb w"><div class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="var(--ac)"/><circle cx="20" cy="20" r="9" fill="none" stroke="var(--bg)" stroke-width="3"/><path d="M20 11a9 9 0 0 1 0 18z" fill="var(--bg)"/></svg>Govt Exam Tracker</div>${TG()}</header><div class="w"><section class="hero"><div class="hg"><div><h1>Know exactly what to study today for your government exam.</h1><p class="mu" style="font-size:17px;margin:12px 0 22px">Pick from ${EX.length} exams. You get only the subjects your exam needs, a topic tracker, a daily plan, cutoff targets and a countdown. Free, no sign-up.</p>
+function landing(){const ov=overview(myExams());
+return `<header class="lb w"><div class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="var(--ac)"/><circle cx="20" cy="20" r="9" fill="none" stroke="var(--bg)" stroke-width="3"/><path d="M20 11a9 9 0 0 1 0 18z" fill="var(--bg)"/></svg>Govt Exam Tracker</div>${TG()}</header><div class="w">${ov}<section class="hero"><div class="hg"><div><h1>Know exactly what to study today for your government exam.</h1><p class="mu" style="font-size:17px;margin:12px 0 22px">Pick from ${EX.length} exams. You get only the subjects your exam needs, a topic tracker, a daily plan, cutoff targets and a countdown. Free, no sign-up.</p>
 <div class="cb"><input id="q" type="text" role="combobox" aria-expanded="false" aria-controls="opts" autocomplete="off" placeholder="Search your exam, e.g. SBI PO, RRB NTPC, BPSC" aria-label="Search exam"><ul id="opts" role="listbox"></ul></div><div class="pop"><span class="mu">Popular:</span>${["SSC CGL","IBPS PO","SBI PO","RRB NTPC","UPSC Civil Services (CSE)","NDA"].map(n=>`<button data-a="pick" data-id="${sl(n)}">${n}</button>`).join("")}</div></div><div class="rc" aria-hidden="true"><div class="art">${Array.from({length:35},(_,i)=>`<span data-v="${[0,1,2,2,0,2,1][(i*3+(i>>2))%7]}"><i class="bub" style="--i:${i}"></i></span>`).join("")}</div><div class="sample card"><div class="tr"><span>Percentage</span><span class="sb" data-v="2"><i class="bub"></i>Completed</span></div><div class="tr"><span>Time & work, pipes</span><span class="sb" data-v="1"><i class="bub"></i>Working on it</span></div><div class="tr"><span>Data interpretation</span><span class="sb" data-v="0"><i class="bub"></i>Not started</span></div><div class="tr"><span class="mu">Cutoff target 65% · streak 12 days</span></div></div></div></div></section>
-${mine.length?`<div class="card"><h3>Continue where you left off</h3>${mine.map(e=>{S.cur=e.id;const st=stats(subs(e));return`<div class="tr" style="padding-left:0;padding-right:0"><span>${esc(e.name)}<br><small class="mu">${st.d} of ${st.t} topics completed</small></span><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn p" data-a="pick" data-id="${e.id}">Open</button><button class="btn" data-a="rmx" data-id="${e.id}" aria-label="Remove ${esc(e.name)} from your list">${RMX===e.id?"Tap again to remove":"Remove"}</button></span></div>`}).join("")}</div>`:""}
 <h2 class="sec">How it works</h2><div class="how"><div class="card"><h3>1. Pick your exam</h3><p class="mu" style="margin:0">Search the list. Your subjects and topics load instantly.</p></div><div class="card"><h3>2. Mark every topic</h3><p class="mu" style="margin:0">Not started, working on it, or completed. Add your own topics too.</p></div><div class="card"><h3>3. Follow the daily plan</h3><p class="mu" style="margin:0">Three study tasks a day, a focus timer and a pace to hit your exam date.</p></div></div>
-<h2 class="sec">Also included</h2><div class="pills" style="padding-bottom:20px">${["Cutoff target","Day streak","Weekly summary","Printable study plan","Mock score log","Focus timer","Backup and restore","Dark mode"].map(t=>`<span class="pill">${t}</span>`).join("")}</div></div>`}
+<h2 class="sec">Also included</h2><div class="pills" style="padding-bottom:20px">${["Several exams at once","Cutoff target","Day streak","Weekly summary","Printable study plan","Mock score log","Focus timer","Backup and restore","Dark mode"].map(t=>`<span class="pill">${t}</span>`).join("")}</div></div>`}
 
-function shell(e){const ss=subs(e),st=stats(ss),dl=dleft();
+function shell(e){const ss=subs(e),st=stats(ss),dl=dleft(),ms=myExams(),sw=ms.length>1?`<select class="sw" id="sw" aria-label="Switch exam">${ms.map(m=>`<option value="${m.id}"${m.id===e.id?" selected":""}>${esc(m.name)}</option>`).join("")}</select>`:"";
 const tabs=[["today","Today"],["syl","Syllabus"],["plan","Plan"],["week","Progress"],["mock","Mocks"],["print","Print"],["bak","Backup"]];
 const body=S.tab==="syl"?syl(e,ss):S.tab==="plan"?planTab(e,ss,st):S.tab==="mock"?mock(e):S.tab==="week"?weekTab(e,ss):S.tab==="print"?printTab(e,ss,st,dl):S.tab==="bak"?bak():today(e,ss,st,dl);
-return `<div class="w"><div class="top"><div><h2>${esc(e.name)}</h2><span class="mu">${CAT[e.cat]} · ${st.d} of ${st.t} topics completed${dl!==null?" · "+(dl>0?dl+" days to exam":dl===0?"exam is today":"exam date passed"):""}</span></div>
-<div style="display:flex;gap:10px;align-items:center"><button class="btn" data-a="chg">Change exam</button>${TG()}</div></div></div>
+return `<div class="w"><div class="top"><div><h1>${esc(e.name)}</h1><span class="mu">${CAT[e.cat]} · ${st.d} of ${st.t} topics completed${dl!==null?" · "+(dl>0?dl+" days to exam":dl===0?"exam is today":"exam date passed"):""}</span></div>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${sw}<button class="btn" data-a="chg">All exams</button>${TG()}</div></div></div>
 <nav role="tablist" aria-label="Sections">${tabs.map(t=>`<button role="tab" aria-selected="${S.tab===t[0]}" data-a="tab" data-t="${t[0]}">${t[1]}</button>`).join("")}</nav><main class="w"><div class="${S.tab==="today"?"today":""}${ANI?" in":""}">${body}</div></main>`}
 
 function today(e,ss,st,dl){const x=X(),pl=plan(x,ss),c=x.dl.c;
@@ -208,11 +241,11 @@ const items=pl.map(p=>({id:"t"+p.k,t:"Study: "+p.n,s:p.s,k:p.k})).concat(fx.map(
 const dn=items.filter(i=>c[i.id]).length;
 let pace="";if(dl!==null){const rem=st.t-st.d,wk=dl>0?Math.ceil(rem/(dl/7)):rem;pace=`<div class="card"><h3>Your pace</h3><p style="margin:0">${rem} topics left and ${dl>0?dl+" days to go":"no days left"}. ${dl>0?`Complete about <b>${wk} topics a week</b> to finish the syllabus on time.`:"Update your exam date in Plan."}</p></div>`}
 else pace=`<div class="card"><h3>Set your exam date</h3><p class="mu" style="margin:0 0 8px">Add it in Plan to see a countdown and how many topics to finish each week.</p><button class="btn p" data-a="tab" data-t="plan">Go to Plan</button></div>`;
-return streakCard()+dueCard(x,ss)+`<div class="card"><h3>Today’s tasks</h3><div class="mu">${dn} of ${items.length} done</div><div class="bar"><i class="d" style="width:${pct(dn,items.length)}%"></i></div>
+return streakCard()+bkNudge()+dueCard(x,ss)+`<div class="card"><h3>Today’s tasks</h3><div class="mu">${dn} of ${items.length} done</div><div class="bar"><i class="d" style="width:${pct(dn,items.length)}%"></i></div>
 ${items.map(i=>`<div class="chk ${c[i.id]?"dn":""}"><input type="checkbox" id="c-${i.id}" data-a="tk" data-id="${i.id}" ${c[i.id]?"checked":""}><label class="t" for="c-${i.id}">${esc(i.t)}${i.s?`<small>${esc(i.s)}</small>`:""}</label>${i.k?bub(i.k,x.st[i.k]||0):""}</div>`).join("")}
 <p class="mu" style="margin:10px 0 0">Study tasks pick topics you are working on first, then the next unstarted ones. The list resets each day.</p></div>
 <div class="card"><h3>Focus timer</h3><div id="pm" class="mu"></div><div class="clock" id="pd"></div>
-<div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap"><button class="btn p" id="pb" data-a="pb">Start</button><button class="btn" data-a="pr">Reset</button><button class="btn" data-a="pw">Switch focus/break</button></div><div class="mu">Focus blocks finished today: <b id="ps">0</b></div></div>${pace}`}
+<div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap"><button class="btn p" id="pb" data-a="pb">Start</button><button class="btn" data-a="pr">Reset</button><button class="btn" data-a="pw">Switch focus/break</button></div><div class="mu">Focus blocks finished today: <b id="ps">0</b></div></div>${pace}${others(e)}`}
 
 function syl(e,ss){const x=X();const ch=[["a","All"],["0","Not started"],["1","Working on it"],["2","Completed"]];
 return `<div class="chips">${ch.map(c=>`<button data-a="flt" data-f="${c[0]}" aria-pressed="${FLT===c[0]}">${c[1]}</button>`).join("")}</div>`+ss.map(s=>{const d=s.it.filter(i=>x.st[i.k]==2).length,w=s.it.filter(i=>x.st[i.k]==1).length;const r=s.it.filter(i=>FLT==="a"||(x.st[i.k]||0)==FLT);
@@ -234,39 +267,42 @@ return `<div class="card"><h3>Exam date</h3><div class="f"><input type="date" id
 
 function mock(e){const ss=subs(e),x=X(),m=x.mk,p=m.map(a=>pct(a.s,a.t)),tg=tgt(e,x),l5=p.slice(-5),a5=l5.length?Math.round(l5.reduce((a,b)=>a+b,0)/l5.length):null;
 const sa=ss.map(s=>{const r=m.filter(a=>a.sec&&a.sec[s.m]),tot=r.reduce((t,a)=>t+a.sec[s.m][1],0);return{n:s.n,p:tot?Math.round(r.reduce((t,a)=>t+a.sec[s.m][0],0)/tot*100):null}}).filter(a=>a.p!==null).sort((a,b)=>a.p-b.p);
-const secCard=sa.length?`<div class="card"><h3>Section-wise average</h3>${sa.map(a=>`<div style="margin:8px 0"><div style="display:flex;justify-content:space-between"><span>${esc(a.n)}</span><b>${a.p}%</b></div><div class="bar"><i class="${a.p>=tg?"d":"w2"}" style="width:${a.p}%"></i></div></div>`).join("")}<p class="mu" style="margin:0">Weakest: ${esc(sa[0].n)}. Mark its topics as Working on it and take sectional tests. Bars turn green once a section reaches your target.</p></div>`:"";
+const secCard=sa.length?`<div class="card"><h3>Section-wise average</h3>${sa.map(a=>`<div style="margin:8px 0"><div style="display:flex;justify-content:space-between"><span>${esc(a.n)}</span><b>${a.p}%</b></div><div class="bar"><i class="${a.p>=tg?"d":"w2"}" style="width:${Math.min(100,Math.max(0,a.p))}%"></i></div></div>`).join("")}<p class="mu" style="margin:0">Weakest: ${esc(sa[0].n)}. Mark its topics as Working on it and take sectional tests. Bars turn green once a section reaches your target.</p></div>`:"";
 const gap=a5===null?"Log a mock to see how close you are.":a5>=tg?`Your last ${l5.length} mocks average ${a5}%, which is ${a5-tg} points above target.`:`Your last ${l5.length} mocks average ${a5}%, which is ${tg-a5} points below target.`;
 const avg=p.length?Math.round(p.reduce((a,b)=>a+b,0)/p.length):0;
 return `<div class="card"><h3>Cutoff target</h3><div class="f"><input id="tg" type="number" min="1" max="100" value="${tg}" aria-label="Target score in percent" style="max-width:110px;flex:none"><span class="mu" style="align-self:center">% of total marks</span></div><p style="margin:0">${gap}</p><p class="mu" style="margin:6px 0 0">This is a starting guess for ${CAT[e.cat]} exams. Real cutoffs change every year by category and shift, so check last year’s cutoff for yours and set it here.</p></div><div class="card"><h3>Log a mock test</h3><div class="f"><input id="mn" placeholder="Name (optional)" aria-label="Mock name"><input id="ms" type="number" step="any" placeholder="Your score" aria-label="Score"><input id="mt" type="number" step="any" placeholder="Out of" aria-label="Total marks"><input id="md" type="date" value="${iso()}" aria-label="Date"></div><details><summary>Section-wise scores (optional)</summary>${ss.map(s=>`<div class="f" style="padding:0 14px"><span style="flex:1 1 100%">${esc(s.n)}</span><input id="ms-${s.m}" type="number" step="any" placeholder="Score" aria-label="${esc(s.n)} score"><input id="mt-${s.m}" type="number" step="any" placeholder="Out of" aria-label="${esc(s.n)} total"></div>`).join("")}</details><button class="btn p" data-a="mk">Save mock</button></div>
 ${secCard}<div class="card"><h3>Your scores</h3>${m.length?`<div class="pills"><span class="pill">Tests: ${m.length}</span><span class="pill">Average: ${avg}%</span><span class="pill">Best: ${Math.max(...p)}%</span><span class="pill">Latest: ${p[p.length-1]}%</span></div>
-<div class="ch" role="img" aria-label="Score trend. Dashed line is your target"><b style="bottom:${tg}%"></b>${p.slice(-12).map(v=>`<i style="height:${Math.max(v,3)}%" title="${v}%"></i>`).join("")}</div>
+<div class="ch" role="img" aria-label="Score trend. Dashed line is your target"><b style="bottom:${tg}%"></b>${p.slice(-12).map(v=>`<i style="height:${Math.min(100,Math.max(v,3))}%" title="${v}%"></i>`).join("")}</div>
 <table><tr><th>Test</th><th>Score</th><th>%</th><th></th></tr>${m.map((a,i)=>`<tr><td>${esc(a.n)}<br><span class="mu">${esc(a.d)}</span></td><td>${a.s}/${a.t}</td><td>${p[i]}%</td><td><button class="lk" data-a="md" data-i="${i}">delete</button></td></tr>`).reverse().join("")}</table>`:`<p class="mu" style="margin:0">No mocks yet. Log your first one after you take it.</p>`}</div>`}
 
-function bak(){return `<div class="card"><h3>Back up your progress</h3><p class="mu" style="margin:0 0 8px">Copy this text and keep it somewhere safe. Paste it on another device to restore everything, for all exams.</p><textarea id="bk" readonly aria-label="Backup data">${esc(JSON.stringify(S))}</textarea><div style="margin-top:8px"><button class="btn p" data-a="cp">Copy backup</button></div></div>
-<div class="card"><h3>Restore from backup</h3><textarea id="rs" placeholder="Paste backup text here" aria-label="Paste backup"></textarea><div style="margin-top:8px"><button class="btn" data-a="rs">Restore</button></div></div>
+function bak(){return `<div class="card"><h3>Back up your progress</h3><p class="mu" style="margin:0 0 8px">Copy this text and keep it somewhere safe. Paste it on another device to restore everything, for all exams.</p><textarea id="bk" readonly aria-label="Backup data">${esc(JSON.stringify(S))}</textarea><div style="margin-top:8px"><button class="btn p" data-a="cp">Copy backup</button> <button class="btn" data-a="dl">Download file</button></div></div>
+<div class="card"><h3>Restore from backup</h3><input type="file" id="rf" accept=".json,application/json" aria-label="Choose backup file" style="margin-bottom:8px"><textarea id="rs" placeholder="Paste backup text here" aria-label="Paste backup"></textarea><div style="margin-top:8px"><button class="btn" data-a="rs">Restore</button></div></div>
 <div class="card"><h3>Reset this exam</h3><p class="mu" style="margin:0 0 8px">Clears statuses, custom topics, mocks and the date for this exam only.</p><button class="btn" data-a="rst">${confirmRst?"Tap again to confirm reset":"Reset this exam"}</button></div>`}
 
-function render(){const e=S.cur&&ce();$("#app").innerHTML=e?shell(e):landing();ANI=0;if(e&&S.tab==="today")paint();if(e)newBadge(e);if(!e)S.cur=null}
+function render0(){const e=S.cur&&ce();$("#app").innerHTML=e?shell(e):landing();ANI=0;if(e&&S.tab==="today")paint();if(e)newBadge(e);if(!e)S.cur=null}
+
+function render(){try{render0()}catch(err){console.error(err);$("#app").innerHTML=`<div class="w"><div class="card"><h3>Something went wrong</h3><p class="mu">Your saved data has not been changed. Copy it first, then reload the page.</p><button class="btn p" data-a="raw">Copy raw data</button> <button class="btn" data-a="reload">Reload</button></div></div>`}}
 
 /* combobox */
+function closeOpts(){const o=$("#opts"),q=$("#q");if(o)o.style.display="none";if(q)q.setAttribute("aria-expanded","false")}
 let CI=-1;
 function fill(){const q=$("#q").value.trim().toLowerCase(),ul=$("#opts");let h="",last="",n=0;
-ALL().forEach(e=>{if(q&&!(e.name+" "+CAT[e.cat]).toLowerCase().includes(q))return;if(e.cat!==last){h+=`<li class="g" role="presentation">${CAT[e.cat]}</li>`;last=e.cat}h+=`<li role="option" data-a="pick" data-id="${e.id}">${esc(e.name)}</li>`;n++});
-if(q.length>1&&!ALL().some(e=>e.name.toLowerCase()===q))h+=`<li role="option" data-a="cust">Add “${esc($("#q").value.trim())}” as a custom exam</li>`;
+ALL().forEach(e=>{if(q&&!(e.name+" "+CAT[e.cat]).toLowerCase().includes(q))return;if(e.cat!==last){h+=`<li class="g" role="presentation">${CAT[e.cat]}</li>`;last=e.cat}h+=`<li role="option" id="o${n}" data-a="pick" data-id="${e.id}">${esc(e.name)}</li>`;n++});
+if(q.length>1&&!ALL().some(e=>e.name.toLowerCase()===q))h+=`<li role="option" id="ocust" data-a="cust">Add “${esc($("#q").value.trim())}” as a custom exam</li>`;
 if(!h)h=`<li class="g">No match</li>`;ul.innerHTML=h;ul.style.display="block";$("#q").setAttribute("aria-expanded","true");CI=-1}
-function mv(d){const o=[...document.querySelectorAll("#opts [role=option]")];if(!o.length)return;o.forEach(a=>a.classList.remove("on"));CI=(CI+d+o.length)%o.length;o[CI].classList.add("on");o[CI].scrollIntoView({block:"nearest"})}
-function pick(id){S.cur=id;S.tab="today";ANI=1;const x=X();daily(x);save();render();scrollTo(0,0)}
+function mv(d){const o=[...document.querySelectorAll("#opts [role=option]")];if(!o.length)return;o.forEach(a=>a.classList.remove("on"));CI=(CI+d+o.length)%o.length;o[CI].classList.add("on");$("#q").setAttribute("aria-activedescendant",o[CI].id);o[CI].scrollIntoView({block:"nearest"})}
+function pick(id,keepTab){S.cur=id;if(!keepTab)S.tab="today";ANI=1;const x=X();daily(x);save();render();scrollTo(0,0)}
 
 /* actions */
 document.addEventListener("focusin",e=>{if(e.target.id==="q")fill()});
 document.addEventListener("input",e=>{if(e.target.id==="q")fill()});
 document.addEventListener("keydown",e=>{const t=e.target;
-if(t.id==="q"){if(e.key==="ArrowDown"){e.preventDefault();mv(1)}else if(e.key==="ArrowUp"){e.preventDefault();mv(-1)}else if(e.key==="Escape")$("#opts").style.display="none";else if(e.key==="Enter"){const o=document.querySelectorAll("#opts [role=option]")[Math.max(CI,0)];if(o)o.click()}}
+if(t.id==="q"){if(e.key==="ArrowDown"){e.preventDefault();mv(1)}else if(e.key==="ArrowUp"){e.preventDefault();mv(-1)}else if(e.key==="Escape")closeOpts();else if(e.key==="Enter"){const o=document.querySelectorAll("#opts [role=option]")[Math.max(CI,0)];if(o)o.click()}}
 else if(t.id&&t.id.startsWith("ad-")&&e.key==="Enter")document.querySelector(`[data-a=add][data-m=${t.id.slice(3)}]`).click()});
 document.addEventListener("toggle",e=>{const m=e.target.dataset&&e.target.dataset.m;if(m)OPEN[m]=e.target.open},true);
-document.addEventListener("change",e=>{if(e.target.id==="tg"){const v=parseFloat(e.target.value);if(v>0&&v<=100){X().tg=v;save();render();toast("Target saved")}}if(e.target.id==="ed"){X().date=e.target.value;save();render();toast(e.target.value?"Exam date saved":"Exam date cleared")}});
+document.addEventListener("change",e=>{if(e.target.id==="sw")return pick(e.target.value,1);if(e.target.id==="rf"){const f=e.target.files[0];if(f)f.text().then(t=>{$("#rs").value=t;toast("File loaded. Press Restore.")});return}if(e.target.id==="tg"){const v=parseFloat(e.target.value);if(v>0&&v<=100){X().tg=v;save();render();toast("Target saved")}}if(e.target.id==="ed"){X().date=e.target.value;save();render();toast(e.target.value?"Exam date saved":"Exam date cleared")}});
 document.addEventListener("click",e=>{
-if(!e.target.closest(".cb")){const o=$("#opts");if(o)o.style.display="none"}
+if(!e.target.closest(".cb"))closeOpts();
 if(RMX&&!e.target.closest("[data-a=rmx]")){RMX=null;document.querySelectorAll("[data-a=rmx]").forEach(t=>t.textContent="Remove")}
 const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
 if(a==="pick")return pick(b.dataset.id);
@@ -275,19 +311,23 @@ if(a==="rmx"){const id=b.dataset.id;if(RMX!==id){RMX=id;render();return toast("T
 if(a==="chg"){S.cur=null;save();return render()}
 if(a==="th"){const R=document.documentElement;S.th=isDark()?"light":"dark";R.classList.add("tx");R.dataset.theme=S.th;document.querySelectorAll(".tg").forEach(t=>t.setAttribute("aria-checked",S.th==="dark"));setTimeout(()=>R.classList.remove("tx"),500);return save()}
 if(a==="pt"){try{print()}catch(er){toast("Use your browser’s print option")}return}
+if(a==="reload")return location.reload();
+if(a==="raw"){try{navigator.clipboard.writeText(localStorage.getItem("gx1")||"").then(()=>toast("Copied"),()=>toast("Could not copy"))}catch(er){toast("Could not copy")}return}
 if(a==="tab"){S.tab=b.dataset.t;ANI=1;confirmRst=0;save();return render()}
 if(["pb","pr","pw"].includes(a))return pmAct(a);
 const x=S.cur?X():null;
-if(a==="cyc"){const k=b.dataset.k,v=((x.st[k]||0)+1)%3;x.st[k]=v;if(v===2)x.cd[k]=iso();else{delete x.cd[k];delete x.rv[k]}if(v>0)mark();daily(x);if(v===2&&x.dl.pl&&x.dl.pl.some(p=>p.k===k))x.dl.c["t"+k]=1;if(v!==2)delete x.dl.c["t"+k];save();render();const nb=document.querySelector('.sb[data-k="'+k+'"]');if(nb)nb.classList.add("pop");return}
-if(a==="tk"){daily(x);x.dl.c[b.dataset.id]=b.checked?1:0;x.td[iso()]=Math.max(0,(x.td[iso()]||0)+(b.checked?1:-1));if(b.checked)mark();save();return render()}
-if(a==="rvd"){x.rv[b.dataset.k]=(x.rv[b.dataset.k]||0)+1;mark();save();return render()}
+if(a==="cyc"){const k=b.dataset.k,v=((x.st[k]||0)+1)%3;x.st[k]=v;if(v===2)x.cd[k]=iso();else{delete x.cd[k];delete x.rv[k];delete x.rd[k]}if(v>0)mark();daily(x);if(x.dl.pl&&x.dl.pl.some(p=>p.k===k))setTask(x,"t"+k,v===2);save();render();const nb=document.querySelector('.sb[data-k="'+k+'"]');if(nb){nb.classList.add("pulse");nb.focus({preventScroll:true})}return}
+if(a==="tk"){setTask(x,b.dataset.id,b.checked);if(b.checked)mark();save();render();const c=document.getElementById("c-"+b.dataset.id);if(c)c.focus({preventScroll:true});return}
+if(a==="rvd"){x.rv[b.dataset.k]=(x.rv[b.dataset.k]||0)+1;x.rd[b.dataset.k]=iso();mark();save();return render()}
 if(a==="flt"){FLT=b.dataset.f;return render()}
 if(a==="add"){const i=$("#ad-"+b.dataset.m),n=i.value.trim().slice(0,80);if(!n)return toast("Type a topic name first");x.cu.push({m:b.dataset.m,n,k:"u"+Date.now()});OPEN[b.dataset.m]=1;save();return render()}
-if(a==="rmc"){x.cu=x.cu.filter(c=>c.k!==b.dataset.k);delete x.st[b.dataset.k];save();return render()}
+if(a==="rmc"){if(!arm(b,"rmc"+b.dataset.k))return;x.cu=x.cu.filter(c=>c.k!==b.dataset.k);delete x.st[b.dataset.k];x.dl.pl=null;save();return render()}
 if(a==="mk"){const s=parseFloat($("#ms").value),t=parseFloat($("#mt").value);if(!(t>0)||isNaN(s))return toast("Enter your score and the total marks");const sec={};subs(ce()).forEach(q=>{const a=parseFloat($("#ms-"+q.m).value),z=parseFloat($("#mt-"+q.m).value);if(z>0&&!isNaN(a))sec[q.m]=[a,z]});mark();x.mk.push({n:$("#mn").value.trim().slice(0,40)||"Mock "+(x.mk.length+1),s,t,d:$("#md").value||iso(),sec});save();return render()}
-if(a==="md"){x.mk.splice(+b.dataset.i,1);save();return render()}
-if(a==="cp"){const t=$("#bk");t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast("Backup copied"),()=>toast("Press copy on the selected text"))}catch(er){toast("Press copy on the selected text")}return}
-if(a==="rs"){try{const o=JSON.parse($("#rs").value);if(!o||typeof o.ex!=="object")throw 0;S=o;S.cx=S.cx||[];S.tab="today";save();setTheme();render();toast("Backup restored")}catch(er){toast("That text is not a valid backup")}return}
+if(a==="md"){if(!arm(b,"md"+b.dataset.i))return;x.mk.splice(+b.dataset.i,1);save();return render()}
+if(a==="cp"){const t=$("#bk");t.select();try{navigator.clipboard.writeText(t.value).then(()=>{S.bk=iso();save();toast("Backup copied")},()=>toast("Press copy on the selected text"))}catch(er){toast("Press copy on the selected text")}return}
+if(a==="dl"){const u=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"})),l=document.createElement("a");l.href=u;l.download="exam-tracker-backup-"+iso()+".json";l.click();setTimeout(()=>URL.revokeObjectURL(u),1000);S.bk=iso();save();return toast("Backup file downloaded")}
+if(a==="rs"){try{const o=JSON.parse($("#rs").value);if(!o||typeof o.ex!=="object"||Array.isArray(o.ex))throw 0;if(!arm(b,"rs","Tap again to replace all data"))return;migrate(o);S=clean(o);S.tab="today";save();setTheme();render();toast("Backup restored")}catch(er){toast("That text is not a valid backup")}return}
 if(a==="rst"){if(!confirmRst){confirmRst=1;return render()}delete S.ex[S.cur];confirmRst=0;X();save();S.tab="today";render();toast("Exam reset")}
 });
+addEventListener("storage",e=>{if(e.key!=="gx1"||!e.newValue)return;try{const o=JSON.parse(e.newValue);if(!o||typeof o.ex!=="object")return;migrate(o);const c=clean(o);c.cur=S.cur;c.tab=S.tab;S=c;render()}catch(er){}});
 render();
