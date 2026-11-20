@@ -80,23 +80,6 @@ Copy your data as text or download it as a file, then restore it on another devi
 
 ---
 
-## Run it
-
-Open `index.html` in any modern browser. No build step or install is needed.
-
-### Host it on GitHub Pages
-1. Put `index.html`, `style.css` and `app.js` in the root of a repository.
-2. Open Settings, then Pages.
-3. Choose "Deploy from a branch", select `main` and the root folder, and save.
-4. Your site will be at `https://<your-username>.github.io/<repository-name>/`.
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `index.html` | Page shell |
-| `style.css` | All styles, including dark mode, print and animation |
-| `app.js` | Exam list, syllabus data and all app logic |
 
 ## Your data
 
